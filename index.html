@@ -2,331 +2,330 @@
 <html lang="mr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PM Poshan Data Collection - Ambajogai</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PM Poshan Data Update - Ambajogai</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS for Excel generation -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-    
-    <!-- Firebase SDK (Modular) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+    <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 mt-4 sm:mt-10">
+        
+        <!-- Header -->
+        <div class="flex justify-end mb-2 pr-1">
+            <button id="adminLoginBtn" class="text-sm text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1 p-2 -mr-2 rounded-lg">
+                ⚙️ Admin
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden relative border border-gray-100">
+            <div class="bg-blue-600 px-5 py-5 sm:px-6 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold text-white leading-tight">PM Poshan Data Collection</h1>
+                    <p class="text-blue-100 text-sm mt-1">Block: Ambajogai (अंबाजोगाई)</p>
+                </div>
+            </div>
+
+            <div class="p-5 sm:p-6">
+                <!-- Search Section -->
+                <div class="mb-6" id="searchSection">
+                    <label for="udiseSearch" class="block text-sm font-semibold text-gray-700 mb-2">Enter UDISE Number (यु-डायस क्रमांक)</label>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="tel" id="udiseSearch" class="flex-1 border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-blue-500 outline-none text-base" placeholder="e.g., 27270101612">
+                        <button id="searchBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:py-2 rounded-lg font-medium transition-colors shadow-sm w-full sm:w-auto">Search</button>
+                    </div>
+                    <p id="searchMessage" class="text-sm mt-2 hidden"></p>
+                </div>
+
+                <!-- Admin Dashboard (Hidden by default) -->
+                <div id="adminDashboard" class="hidden mb-6 bg-gray-50 p-4 sm:p-5 rounded-lg border border-gray-200 shadow-inner">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">Admin Dashboard</h2>
+                        <button id="closeAdminBtn" class="text-gray-400 hover:text-red-500 font-bold p-2 text-xl leading-none">&times;</button>
+                    </div>
+                    
+                    <div class="space-y-5">
+                        <button id="downloadExcelBtn" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium transition-colors shadow-sm">
+                            📥 Download Updated Excel Data
+                        </button>
+
+                        <div class="border-t border-gray-300 pt-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Unlock/Reset School Data</label>
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="tel" id="adminUdiseReset" class="flex-1 border border-gray-300 rounded-lg px-4 py-3 sm:py-2 text-base" placeholder="UDISE to unlock">
+                                <button id="resetUdiseBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 sm:py-2 rounded-lg font-medium shadow-sm w-full sm:w-auto">Unlock</button>
+                            </div>
+                            <p id="adminMessage" class="text-sm mt-2 hidden"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-gray-200 mb-6 hidden" id="divider">
+
+                <!-- Data Form Section -->
+                <form id="dataForm" class="hidden space-y-5">
+                    <input type="hidden" id="recordKey">
+                    
+                    <div id="lockedBadge" class="hidden bg-yellow-50 text-yellow-800 text-sm font-medium px-4 py-2 rounded-md border border-yellow-200 flex items-center gap-2 mb-2">
+                        <span>🔒</span> Data Submitted & Locked
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">School Name</label>
+                        <input type="text" id="schoolName" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-base form-input shadow-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Headmaster Name (मुख्याध्यापकाचे नाव)</label>
+                        <input type="text" id="hmName" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-base form-input shadow-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Mobile Number (मोबाईल क्रमांक)</label>
+                        <input type="tel" id="hmMobile" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-base form-input shadow-sm">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">TAN</label>
+                            <input type="text" id="tan" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none uppercase text-base form-input shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">PAN</label>
+                            <input type="text" id="pan" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none uppercase text-base form-input shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="pt-4" id="submitContainer">
+                        <button type="submit" id="updateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-4 rounded-lg font-bold text-lg transition-colors shadow-md active:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                            Submit & Lock Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-        import { getDatabase, ref, set, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+        import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
-        // Your Firebase Project Configuration
+        // UPDATED FIREBASE URL HERE
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY", // Get this from Firebase Console > Project Settings
-            authDomain: "mdm-ambajogai.firebaseapp.com",
-            databaseURL: "https://mdm-ambajogai-default-rtdb.firebaseio.com",
-            projectId: "mdm-ambajogai",
-            storageBucket: "mdm-ambajogai.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            databaseURL: "https://mdm-ambajogai-default-rtdb.firebaseio.com/"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const dbRef = ref(db);
 
-        // Fetching the comprehensive JSON data generated from the Excel file
-        let schoolData = [];
+        const ADMIN_PIN = "2026"; 
+
+        // UI Elements
+        const searchBtn = document.getElementById('searchBtn');
+        const udiseSearch = document.getElementById('udiseSearch');
+        const searchMessage = document.getElementById('searchMessage');
+        const divider = document.getElementById('divider');
         
-        async function loadData() {
-            try {
-                // Ensure comprehensive_data.json is uploaded to your GitHub Pages repository
-                const response = await fetch('comprehensive_data.json'); 
-                schoolData = await response.json();
-            } catch (error) {
-                console.error("Error loading school data:", error);
-                alert("शाळेची माहिती लोड करण्यात त्रुटी. कृपया इंटरनेट तपासा.");
+        const dataForm = document.getElementById('dataForm');
+        const formInputs = document.querySelectorAll('.form-input');
+        const submitContainer = document.getElementById('submitContainer');
+        const lockedBadge = document.getElementById('lockedBadge');
+
+        const recordKeyField = document.getElementById('recordKey');
+        const schoolNameField = document.getElementById('schoolName');
+        const hmNameField = document.getElementById('hmName');
+        const hmMobileField = document.getElementById('hmMobile');
+        const tanField = document.getElementById('tan');
+        const panField = document.getElementById('pan');
+        const updateBtn = document.getElementById('updateBtn');
+
+        // Admin UI Elements
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const adminDashboard = document.getElementById('adminDashboard');
+        const closeAdminBtn = document.getElementById('closeAdminBtn');
+        const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+        const resetUdiseBtn = document.getElementById('resetUdiseBtn');
+        const adminUdiseReset = document.getElementById('adminUdiseReset');
+        const adminMessage = document.getElementById('adminMessage');
+
+        // Helper to find record by UDISE
+        async function findRecordByUdise(udiseVal) {
+            const snapshot = await get(child(dbRef, '/'));
+            if (!snapshot.exists()) return null;
+            
+            const data = snapshot.val();
+            for (const [key, record] of Object.entries(data)) {
+                if (record.u === udiseVal) return { key, record };
             }
+            return null;
         }
 
-        window.onload = loadData;
-
-        // Form elements
-        const udiseInput = document.getElementById('udise');
-        const searchBtn = document.getElementById('searchBtn');
-        const dataForm = document.getElementById('dataForm');
-        
-        const schoolNameEl = document.getElementById('schoolName');
-        const hmNameInput = document.getElementById('hmName');
-        const hmMobileInput = document.getElementById('hmMobile');
-        const tanInput = document.getElementById('tan');
-        const panInput = document.getElementById('pan');
-        const submitBtn = document.getElementById('submitBtn');
-        const statusMsg = document.getElementById('statusMsg');
-
-        // Admin elements
-        const adminBtn = document.getElementById('adminBtn');
-        const adminModal = document.getElementById('adminModal');
-        const pinInput = document.getElementById('adminPin');
-        const verifyPinBtn = document.getElementById('verifyPinBtn');
-        const cancelAdminBtn = document.getElementById('cancelAdminBtn');
-        const pinError = document.getElementById('pinError');
-        const adminControls = document.getElementById('adminControls');
-        const downloadExcelBtn = document.getElementById('downloadExcelBtn');
-        const dataCollectionArea = document.getElementById('dataCollectionArea');
-        const closeAdminBtn = document.getElementById('closeAdminBtn');
-
-        const ADMIN_PIN = "2026"; // Admin PIN protection
-
-        // Search and Auto-Populate Logic
+        // 1. Search Database for UDISE
         searchBtn.addEventListener('click', async () => {
-            const udise = udiseInput.value.trim();
-            const school = schoolData.find(s => s.u === udise);
+            const searchValue = udiseSearch.value.trim();
+            if (!searchValue) return;
 
-            if (school) {
-                // 1. Set basic read-only info
-                schoolNameEl.textContent = school.s;
-                
-                // 2. Set default values from Excel (JSON)
-                let prefillHmName = school.h || "";
-                let prefillHmMobile = school.m || "";
-                let prefillTan = (school.t && school.t !== "0") ? school.t : "";
-                let prefillPan = (school.p && school.p !== "0") ? school.p : "";
+            searchBtn.textContent = 'Searching...';
+            searchMessage.classList.add('hidden');
+            dataForm.classList.add('hidden');
+            divider.classList.add('hidden');
 
-                // 3. Check Firebase for already updated/edited data
-                searchBtn.disabled = true;
-                searchBtn.innerText = "माहिती शोधत आहे...";
-                
-                try {
-                    const dbRef = ref(db, 'pm_poshan_ambajogai/' + udise);
-                    const snapshot = await get(dbRef);
+            try {
+                const result = await findRecordByUdise(searchValue);
+
+                if (result) {
+                    const { key, record } = result;
                     
-                    if (snapshot.exists()) {
-                        const fbData = snapshot.val();
-                        // Overwrite with Firebase data if it exists (prioritize updated data)
-                        if (fbData.hm_name) prefillHmName = fbData.hm_name;
-                        if (fbData.hm_mobile) prefillHmMobile = fbData.hm_mobile;
-                        if (fbData.tan) prefillTan = fbData.tan;
-                        if (fbData.pan) prefillPan = fbData.pan;
+                    recordKeyField.value = key;
+                    schoolNameField.value = record.s || '';
+                    hmNameField.value = record.h || '';
+                    hmMobileField.value = record.m || '';
+                    tanField.value = record.t === '0' ? '' : record.t;
+                    panField.value = record.p === '0' ? '' : record.p;
+                    
+                    if (record.l === 1) {
+                        formInputs.forEach(input => {
+                            input.readOnly = true;
+                            input.classList.add('bg-gray-100', 'text-gray-500', 'border-gray-200');
+                        });
+                        submitContainer.classList.add('hidden');
+                        lockedBadge.classList.remove('hidden');
+                    } else {
+                        formInputs.forEach(input => {
+                            input.readOnly = false;
+                            input.classList.remove('bg-gray-100', 'text-gray-500', 'border-gray-200');
+                        });
+                        submitContainer.classList.remove('hidden');
+                        lockedBadge.classList.add('hidden');
                     }
-                } catch (error) {
-                    console.error("Error fetching from Firebase:", error);
-                } finally {
-                    searchBtn.disabled = false;
-                    searchBtn.innerText = "शोधा";
+                    
+                    divider.classList.remove('hidden');
+                    dataForm.classList.remove('hidden');
+                    // Scroll down to form on mobile
+                    dataForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                } else {
+                    showMessage(searchMessage, 'UDISE number not found.', 'text-red-600');
                 }
-
-                // 4. Auto-populate the input fields
-                hmNameInput.value = prefillHmName;
-                hmMobileInput.value = prefillHmMobile;
-                tanInput.value = prefillTan;
-                panInput.value = prefillPan;
-                
-                // Show form
-                dataForm.classList.remove('hidden');
-                statusMsg.classList.add('hidden');
-            } else {
-                alert("UDISE क्रमांक आढळला नाही. कृपया योग्य क्रमांक टाका.");
-                dataForm.classList.add('hidden');
-            }
-        });
-
-        // Submit Logic
-        submitBtn.addEventListener('click', async () => {
-            const udise = udiseInput.value.trim();
-            if (!udise) return;
-
-            submitBtn.disabled = true;
-            submitBtn.innerText = "जतन करत आहे...";
-
-            const updatedInfo = {
-                udise: udise,
-                school_name: schoolNameEl.textContent,
-                hm_name: hmNameInput.value.trim(),
-                hm_mobile: hmMobileInput.value.trim(),
-                tan: tanInput.value.trim(),
-                pan: panInput.value.trim(),
-                updated_at: serverTimestamp()
-            };
-
-            try {
-                // Save to Firebase Realtime Database
-                await set(ref(db, 'pm_poshan_ambajogai/' + udise), updatedInfo);
-                
-                dataForm.classList.add('hidden');
-                statusMsg.classList.remove('hidden');
-                udiseInput.value = '';
             } catch (error) {
-                console.error("Error saving data:", error);
-                alert("माहिती जतन करताना त्रुटी आली. पुन्हा प्रयत्न करा.");
+                console.error(error);
+                showMessage(searchMessage, 'Error connecting to database.', 'text-red-600');
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "माहिती जतन करा";
+                searchBtn.textContent = 'Search';
             }
         });
 
-        // Admin functions
-        adminBtn.addEventListener('click', () => {
-            adminModal.classList.remove('hidden');
-            pinInput.value = '';
-            pinError.classList.add('hidden');
-        });
-
-        cancelAdminBtn.addEventListener('click', () => {
-            adminModal.classList.add('hidden');
-        });
-        
-        closeAdminBtn.addEventListener('click', () => {
-            adminControls.classList.add('hidden');
-            dataCollectionArea.classList.remove('hidden');
-        });
-
-        verifyPinBtn.addEventListener('click', () => {
-            if (pinInput.value === ADMIN_PIN) {
-                adminModal.classList.add('hidden');
-                dataCollectionArea.classList.add('hidden');
-                adminControls.classList.remove('hidden');
-            } else {
-                pinError.classList.remove('hidden');
-            }
-        });
-
-        // Download Excel Logic
-        downloadExcelBtn.addEventListener('click', async () => {
-            downloadExcelBtn.disabled = true;
-            downloadExcelBtn.innerText = "Downloading...";
+        // 2. Update and Lock Database Record
+        dataForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const key = recordKeyField.value;
             
+            updateBtn.textContent = 'Saving...';
+            updateBtn.disabled = true;
+
+            const updates = {};
+            updates['/' + key + '/s'] = schoolNameField.value.trim();
+            updates['/' + key + '/h'] = hmNameField.value.trim();
+            updates['/' + key + '/m'] = hmMobileField.value.trim();
+            updates['/' + key + '/t'] = tanField.value.trim().toUpperCase() || '0';
+            updates['/' + key + '/p'] = panField.value.trim().toUpperCase() || '0';
+            updates['/' + key + '/l'] = 1;
+
             try {
-                // 1. Fetch updated data from Firebase
-                const dbRef = ref(db, 'pm_poshan_ambajogai');
-                const snapshot = await get(dbRef);
-                const updatedData = snapshot.val() || {};
-
-                // 2. Merge original JSON with Firebase updates
-                const mergedData = schoolData.map(school => {
-                    const updates = updatedData[school.u];
-                    return {
-                        "UDISE CODE": school.u,
-                        "SCHOOL NAME": school.s,
-                        "CLUSTER": school.c,
-                        "ACCOUNT NO": school.a,
-                        "BANK NAME": school.b,
-                        "IFSC": school.i,
-                        "HM Name (Original)": school.h,
-                        "HM Name (Updated)": updates ? updates.hm_name : "",
-                        "Mobile (Original)": school.m,
-                        "Mobile (Updated)": updates ? updates.hm_mobile : "",
-                        "TAN (Original)": school.t,
-                        "TAN (Updated)": updates ? updates.tan : "",
-                        "PAN (Original)": school.p,
-                        "PAN (Updated)": updates ? updates.pan : "",
-                        "Last Updated": updates && updates.updated_at ? new Date(updates.updated_at).toLocaleString('en-IN') : "Not Updated"
-                    };
-                });
-
-                // 3. Generate Excel file using SheetJS
-                const worksheet = XLSX.utils.json_to_sheet(mergedData);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Updated Data");
-                
-                // Set column widths for better readability
-                const wscols = [
-                    {wch: 15}, {wch: 40}, {wch: 20}, {wch: 20}, {wch: 20}, {wch: 15},
-                    {wch: 30}, {wch: 30}, {wch: 15}, {wch: 15}, 
-                    {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}
-                ];
-                worksheet['!cols'] = wscols;
-
-                // 4. Trigger download
-                XLSX.writeFile(workbook, "PM_POSHAN_AMBAJOGAI_UPDATED.xlsx");
-                
+                await update(dbRef, updates);
+                showMessage(searchMessage, 'Data submitted and locked successfully!', 'text-green-600');
+                dataForm.classList.add('hidden');
+                divider.classList.add('hidden');
+                udiseSearch.value = '';
+                // Scroll back to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             } catch (error) {
-                console.error("Error generating Excel:", error);
-                alert("एक्सेल फाइल तयार करताना त्रुटी आली.");
+                showMessage(searchMessage, 'Failed to save data. Check rules.', 'text-red-600');
             } finally {
-                downloadExcelBtn.disabled = false;
-                downloadExcelBtn.innerText = "Download Updated Excel";
+                updateBtn.textContent = 'Submit & Lock Data';
+                updateBtn.disabled = false;
             }
         });
+
+        // 3. Admin Dashboard Logic
+        adminLoginBtn.addEventListener('click', () => {
+            if (adminDashboard.classList.contains('hidden')) {
+                const pin = prompt("Enter Admin PIN:");
+                if (pin === ADMIN_PIN) {
+                    adminDashboard.classList.remove('hidden');
+                    adminDashboard.scrollIntoView({ behavior: 'smooth' });
+                } else if (pin !== null) {
+                    alert("Incorrect PIN");
+                }
+            }
+        });
+
+        closeAdminBtn.addEventListener('click', () => {
+            adminDashboard.classList.add('hidden');
+            adminMessage.classList.add('hidden');
+        });
+
+        downloadExcelBtn.addEventListener('click', async () => {
+            downloadExcelBtn.textContent = "Generating...";
+            try {
+                const snapshot = await get(child(dbRef, '/'));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const exportData = [];
+
+                    for (const record of Object.values(data)) {
+                        exportData.push({
+                            "UDISE CODE": record.u || "",
+                            "SCHOOL NAME": record.s || "",
+                            "HM NAME": record.h || "",
+                            "HM MOBILE": record.m || "",
+                            "TAN": record.t === '0' ? "" : record.t,
+                            "PAN": record.p === '0' ? "" : record.p,
+                            "STATUS": record.l === 1 ? "Updated" : "Pending"
+                        });
+                    }
+
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Ambajogai_Data");
+                    XLSX.writeFile(wb, "PM_POSHAN_Updated_Data.xlsx");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error generating Excel file.");
+            } finally {
+                downloadExcelBtn.innerHTML = "📥 Download Updated Excel Data";
+            }
+        });
+
+        resetUdiseBtn.addEventListener('click', async () => {
+            const udiseToReset = adminUdiseReset.value.trim();
+            if (!udiseToReset) return;
+
+            resetUdiseBtn.textContent = "Wait...";
+            try {
+                const result = await findRecordByUdise(udiseToReset);
+                if (result) {
+                    await update(dbRef, { ['/' + result.key + '/l']: 0 });
+                    showMessage(adminMessage, `UDISE ${udiseToReset} is now unlocked!`, 'text-green-600');
+                    adminUdiseReset.value = '';
+                } else {
+                    showMessage(adminMessage, 'UDISE not found.', 'text-red-600');
+                }
+            } catch (error) {
+                showMessage(adminMessage, 'Error resetting record.', 'text-red-600');
+            } finally {
+                resetUdiseBtn.textContent = "Unlock";
+            }
+        });
+
+        function showMessage(element, text, colorClass) {
+            element.textContent = text;
+            element.className = `text-sm mt-2 block font-medium ${colorClass}`;
+            element.classList.remove('hidden');
+        }
     </script>
-</head>
-<body class="bg-gray-100 min-h-screen p-4 font-sans relative">
-    
-    <!-- Header with Admin Button -->
-    <div class="flex justify-end max-w-xl mx-auto mb-2">
-        <button id="adminBtn" class="text-sm bg-gray-300 hover:bg-gray-400 text-gray-800 py-1 px-3 rounded shadow">Admin Login</button>
-    </div>
-
-    <!-- Main Data Collection Area -->
-    <div id="dataCollectionArea" class="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-2xl font-bold text-center text-blue-700 mb-6">PM Poshan Data Collection<br><span class="text-lg text-gray-600">Taluka Ambajogai</span></h2>
-        
-        <!-- Search Section -->
-        <div class="mb-6">
-            <label class="block text-gray-700 font-bold mb-2">शाळेचा UDISE क्रमांक टाका (11 अंकी)</label>
-            <div class="flex gap-2">
-                <input type="number" id="udise" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 27270101612">
-                <button id="searchBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">शोधा</button>
-            </div>
-        </div>
-
-        <!-- Success Message -->
-        <div id="statusMsg" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-            माहिती यशस्वीरित्या जतन केली गेली आहे! (Data Saved Successfully)
-        </div>
-
-        <!-- Editable Form Section -->
-        <div id="dataForm" class="hidden space-y-4 border-t pt-4">
-            <div>
-                <label class="block text-gray-500 text-sm">शाळेचे नाव (School Name)</label>
-                <p id="schoolName" class="font-bold text-gray-800 text-lg"></p>
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-bold mb-1">मुख्याध्यापकाचे नाव (HM Name)</label>
-                <input type="text" id="hmName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-bold mb-1">मोबाईल क्रमांक (Mobile Number)</label>
-                <input type="tel" id="hmMobile" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-bold mb-1">TAN क्रमांक (TAN Number)</label>
-                <input type="text" id="tan" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-bold mb-1">PAN क्रमांक (PAN Number)</label>
-                <input type="text" id="pan" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
-            </div>
-
-            <button id="submitBtn" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition mt-4">
-                माहिती जतन करा (Save)
-            </button>
-        </div>
-    </div>
-
-    <!-- Admin Controls Area (Hidden by default) -->
-    <div id="adminControls" class="hidden max-w-xl mx-auto bg-white rounded-lg shadow-md p-6 border-t-4 border-purple-600">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-purple-700">Admin Dashboard</h2>
-            <button id="closeAdminBtn" class="text-gray-500 hover:text-gray-800">&times; Close</button>
-        </div>
-        
-        <p class="text-gray-600 mb-6">Merge real-time updates from Firebase with the original dataset and export to Excel.</p>
-        
-        <button id="downloadExcelBtn" class="w-full bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition flex justify-center items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            Download Updated Excel
-        </button>
-    </div>
-
-    <!-- Admin PIN Modal -->
-    <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-80">
-            <h3 class="text-xl font-bold mb-4 text-center">Admin Access</h3>
-            <input type="password" id="adminPin" placeholder="Enter PIN" class="w-full px-4 py-2 border rounded-lg mb-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-500">
-            <p id="pinError" class="text-red-500 text-sm text-center mb-4 hidden">Incorrect PIN.</p>
-            <div class="flex gap-2 mt-4">
-                <button id="cancelAdminBtn" class="w-1/2 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
-                <button id="verifyPinBtn" class="w-1/2 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Login</button>
-            </div>
-        </div>
-    </div>
-
 </body>
 </html>
