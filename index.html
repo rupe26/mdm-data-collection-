@@ -6,6 +6,10 @@
     <title>PM Poshan Data Update - Ambajogai</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Using Firebase Compat SDK to fix mobile local file connection errors -->
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800 pb-10">
 
@@ -173,18 +177,16 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-        import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
-
+    <!-- Firebase Logic -->
+    <script>
+        // Initialize Firebase using the Compat structure
         const firebaseConfig = {
             databaseURL: "https://mdm-ambajogai-default-rtdb.firebaseio.com/"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const dbRef = ref(db);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const dbRef = db.ref();
 
         const ADMIN_PIN = "2026"; 
 
@@ -200,7 +202,7 @@
         const updateBtn = document.getElementById('updateBtn');
         const recordKeyField = document.getElementById('recordKey');
 
-        // Form Fields map based on IDs
+        // Form Fields
         const fields = [
             'school_name', 'udise_code', 'udise_code_marathi', 'block', 'cluster', 
             'cluster_code', 'sr_no', 'headmaster_name', 'headmaster_mobile', 
@@ -231,20 +233,18 @@
             divider.classList.add('hidden');
 
             try {
-                const snapshot = await get(child(dbRef, '/' + searchValue));
+                const snapshot = await dbRef.child(searchValue).get();
 
                 if (snapshot.exists()) {
                     const record = snapshot.val();
                     recordKeyField.value = searchValue; 
                     
-                    // Pre-fill all fields dynamically
                     fields.forEach(f => {
                         if(fieldElements[f]) {
                             fieldElements[f].value = record[f] !== undefined ? record[f] : '';
                         }
                     });
                     
-                    // Handle Lock Status
                     if (record.locked === 1) {
                         formInputs.forEach(input => {
                             input.readOnly = true;
@@ -270,13 +270,14 @@
                 }
             } catch (error) {
                 console.error(error);
-                showMessage(searchMessage, 'Error connecting: ' + error.message, 'text-red-600');
+                showMessage(searchMessage, 'Connection Error: Check rules or network.', 'text-red-600');
+                alert("Error Details: " + error.message); // This will pop up showing the exact block
             } finally {
                 searchBtn.textContent = 'Search';
             }
         });
 
-        // 2. Update and Lock Database Record
+        // 2. Update and Lock
         dataForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const key = recordKeyField.value;
@@ -285,7 +286,6 @@
             updateBtn.disabled = true;
 
             const updates = {};
-            // Collect all current input values
             fields.forEach(f => {
                 if(fieldElements[f]) {
                     updates['/' + key + '/' + f] = fieldElements[f].value.trim();
@@ -294,7 +294,7 @@
             updates['/' + key + '/locked'] = 1;
 
             try {
-                await update(dbRef, updates);
+                await dbRef.update(updates);
                 showMessage(searchMessage, 'All data submitted and locked successfully!', 'text-green-600');
                 dataForm.classList.add('hidden');
                 divider.classList.add('hidden');
@@ -308,7 +308,7 @@
             }
         });
 
-        // 3. Admin Dashboard Logic
+        // 3. Admin Dashboard
         adminLoginBtn.addEventListener('click', () => {
             if (adminDashboard.classList.contains('hidden')) {
                 const pin = prompt("Enter Admin PIN:");
@@ -326,11 +326,11 @@
             adminMessage.classList.add('hidden');
         });
 
-        // 4. Download Comprehensive Excel
+        // 4. Download Excel
         downloadExcelBtn.addEventListener('click', async () => {
             downloadExcelBtn.textContent = "Generating...";
             try {
-                const snapshot = await get(child(dbRef, '/'));
+                const snapshot = await dbRef.get();
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     const exportData = [];
@@ -372,15 +372,16 @@
             }
         });
 
+        // 5. Admin Reset Lock
         resetUdiseBtn.addEventListener('click', async () => {
             const udiseToReset = adminUdiseReset.value.trim();
             if (!udiseToReset) return;
 
             resetUdiseBtn.textContent = "Wait...";
             try {
-                const snapshot = await get(child(dbRef, '/' + udiseToReset));
+                const snapshot = await dbRef.child(udiseToReset).get();
                 if (snapshot.exists()) {
-                    await update(dbRef, { ['/' + udiseToReset + '/locked']: 0 });
+                    await dbRef.update({ ['/' + udiseToReset + '/locked']: 0 });
                     showMessage(adminMessage, `UDISE ${udiseToReset} is now unlocked!`, 'text-green-600');
                     adminUdiseReset.value = '';
                 } else {
