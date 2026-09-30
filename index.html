@@ -7,27 +7,44 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     
-    <!-- Using Firebase Compat SDK to fix mobile local file connection errors -->
+    <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800 pb-10">
 
-    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 mt-4 sm:mt-10">
+    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 mt-2 sm:mt-6">
         
-        <!-- Header -->
-        <div class="flex justify-end mb-2 pr-1">
-            <button id="adminLoginBtn" class="text-sm text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1 p-2 -mr-2 rounded-lg">
-                ⚙️ Admin
+        <!-- Header & Admin Login -->
+        <div class="flex justify-between items-center mb-4">
+            <div class="text-xs sm:text-sm font-semibold text-gray-600 bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                📊 Block: Ambajogai (अंबाजोगाई)
+            </div>
+            <button id="adminLoginBtn" class="text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
+                ⚙️ Admin Dashboard
             </button>
         </div>
 
+        <!-- Real-time Dashboard Summary Cards -->
+        <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100 text-center">
+                <p class="text-xs text-gray-500 font-medium">Total Schools</p>
+                <h3 id="totalCount" class="text-lg sm:text-2xl font-bold text-gray-800">0</h3>
+            </div>
+            <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-green-100 text-center bg-green-50/40">
+                <p class="text-xs text-green-600 font-medium">Updated / Locked</p>
+                <h3 id="updatedCount" class="text-lg sm:text-2xl font-bold text-green-700">0</h3>
+            </div>
+            <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-orange-100 text-center bg-orange-50/40">
+                <p class="text-xs text-orange-600 font-medium">Remaining</p>
+                <h3 id="pendingCount" class="text-lg sm:text-2xl font-bold text-orange-700">0</h3>
+            </div>
+        </div>
+
         <div class="bg-white rounded-xl shadow-lg overflow-hidden relative border border-gray-100">
-            <div class="bg-blue-600 px-5 py-5 sm:px-6 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                <div>
-                    <h1 class="text-lg sm:text-xl font-bold text-white leading-tight">PM Poshan Data Collection</h1>
-                    <p class="text-blue-100 text-sm mt-1">Block: Ambajogai (अंबाजोगाई)</p>
-                </div>
+            <div class="bg-blue-600 px-5 py-4 sm:px-6">
+                <h1 class="text-lg sm:text-xl font-bold text-white leading-tight">PM Poshan Data Collection Portal</h1>
+                <p class="text-blue-100 text-xs sm:text-sm mt-0.5">Search your UDISE code to verify or update information</p>
             </div>
 
             <div class="p-5 sm:p-6">
@@ -41,22 +58,42 @@
                     <p id="searchMessage" class="text-sm mt-2 hidden"></p>
                 </div>
 
-                <!-- Admin Dashboard -->
+                <!-- Admin Dashboard (Hidden by default) -->
                 <div id="adminDashboard" class="hidden mb-6 bg-gray-50 p-4 sm:p-5 rounded-lg border border-gray-200 shadow-inner">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-gray-800">Admin Dashboard</h2>
+                        <h2 class="text-lg font-bold text-gray-800">Admin Control Panel</h2>
                         <button id="closeAdminBtn" class="text-gray-400 hover:text-red-500 font-bold p-2 text-xl leading-none">&times;</button>
                     </div>
                     
-                    <div class="space-y-5">
-                        <button id="downloadExcelBtn" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium transition-colors shadow-sm">
-                            📥 Download Updated Excel Data
+                    <div class="space-y-4">
+                        <!-- Filter Options for Excel Download -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Filter Export Data by Status</label>
+                                <select id="excelFilterStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm">
+                                    <option value="all">All Schools</option>
+                                    <option value="locked">Updated / Locked Only</option>
+                                    <option value="pending">Remaining / Pending Only</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Sort Export Order</label>
+                                <select id="excelSortOrder" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm">
+                                    <option value="udise_asc">UDISE Code (Ascending)</option>
+                                    <option value="udise_desc">UDISE Code (Descending)</option>
+                                    <option value="name_asc">School Name (A to Z)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button id="downloadExcelBtn" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium transition-colors shadow-sm flex items-center justify-center gap-2">
+                            📥 Download Filtered Excel Report
                         </button>
 
                         <div class="border-t border-gray-300 pt-4">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Unlock/Reset School Data</label>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Unlock/Reset Specific School Data</label>
                             <div class="flex flex-col sm:flex-row gap-3">
-                                <input type="tel" id="adminUdiseReset" class="flex-1 border border-gray-300 rounded-lg px-4 py-3 sm:py-2 text-base" placeholder="UDISE to unlock">
+                                <input type="tel" id="adminUdiseReset" class="flex-1 border border-gray-300 rounded-lg px-4 py-3 sm:py-2 text-base bg-white" placeholder="Enter UDISE to unlock">
                                 <button id="resetUdiseBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 sm:py-2 rounded-lg font-medium shadow-sm w-full sm:w-auto">Unlock</button>
                             </div>
                             <p id="adminMessage" class="text-sm mt-2 hidden"></p>
@@ -87,10 +124,6 @@
                                 <input type="text" id="udise_code" class="w-full border border-gray-300 rounded-lg px-3 py-2 form-input bg-white">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">UDISE Code (Marathi)</label>
-                                <input type="text" id="udise_code_marathi" class="w-full border border-gray-300 rounded-lg px-3 py-2 form-input bg-white">
-                            </div>
-                            <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">Block</label>
                                 <input type="text" id="block" class="w-full border border-gray-300 rounded-lg px-3 py-2 form-input bg-white">
                             </div>
@@ -101,10 +134,6 @@
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">Cluster Code</label>
                                 <input type="text" id="cluster_code" class="w-full border border-gray-300 rounded-lg px-3 py-2 form-input bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Sr No.</label>
-                                <input type="text" id="sr_no" class="w-full border border-gray-300 rounded-lg px-3 py-2 form-input bg-white">
                             </div>
                         </div>
                     </div>
@@ -177,9 +206,8 @@
         </div>
     </div>
 
-    <!-- Firebase Logic -->
+    <!-- Firebase Logic & Dashboard Script -->
     <script>
-        // Initialize Firebase using the Compat structure
         const firebaseConfig = {
             databaseURL: "https://mdm-ambajogai-default-rtdb.firebaseio.com/"
         };
@@ -202,10 +230,15 @@
         const updateBtn = document.getElementById('updateBtn');
         const recordKeyField = document.getElementById('recordKey');
 
-        // Form Fields
+        // Counters
+        const totalCountEl = document.getElementById('totalCount');
+        const updatedCountEl = document.getElementById('updatedCount');
+        const pendingCountEl = document.getElementById('pendingCount');
+
+        // Fields (excluding udise_code_marathi and sr_no)
         const fields = [
-            'school_name', 'udise_code', 'udise_code_marathi', 'block', 'cluster', 
-            'cluster_code', 'sr_no', 'headmaster_name', 'headmaster_mobile', 
+            'school_name', 'udise_code', 'block', 'cluster', 
+            'cluster_code', 'headmaster_name', 'headmaster_mobile', 
             'enrollment_1_5', 'enrollment_6_8', 'account_name', 'bank_name', 
             'account_no', 'ifsc', 'pfms_vendor_code', 'tan', 'pan'
         ];
@@ -221,6 +254,32 @@
         const resetUdiseBtn = document.getElementById('resetUdiseBtn');
         const adminUdiseReset = document.getElementById('adminUdiseReset');
         const adminMessage = document.getElementById('adminMessage');
+        const excelFilterStatus = document.getElementById('excelFilterStatus');
+        const excelSortOrder = document.getElementById('excelSortOrder');
+
+        // Real-time Dashboard Listener
+        dbRef.on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                let total = 0;
+                let updated = 0;
+
+                Object.values(data).forEach(record => {
+                    total++;
+                    if (record.locked === 1) {
+                        updated++;
+                    }
+                });
+
+                totalCountEl.textContent = total;
+                updatedCountEl.textContent = updated;
+                pendingCountEl.textContent = total - updated;
+            } else {
+                totalCountEl.textContent = 0;
+                updatedCountEl.textContent = 0;
+                pendingCountEl.textContent = 0;
+            }
+        });
 
         // 1. Search Database
         searchBtn.addEventListener('click', async () => {
@@ -271,7 +330,6 @@
             } catch (error) {
                 console.error(error);
                 showMessage(searchMessage, 'Connection Error: Check rules or network.', 'text-red-600');
-                alert("Error Details: " + error.message); // This will pop up showing the exact block
             } finally {
                 searchBtn.textContent = 'Search';
             }
@@ -326,23 +384,28 @@
             adminMessage.classList.add('hidden');
         });
 
-        // 4. Download Excel
+        // 4. Filtered & Sorted Excel Download
         downloadExcelBtn.addEventListener('click', async () => {
             downloadExcelBtn.textContent = "Generating...";
             try {
                 const snapshot = await dbRef.get();
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    const exportData = [];
+                    let exportList = [];
 
                     for (const [udise, record] of Object.entries(data)) {
-                        exportData.push({
-                            "SR NO": record.sr_no || "",
+                        const isLocked = record.locked === 1;
+                        const statusFilter = excelFilterStatus.value;
+
+                        // Apply Status Filter
+                        if (statusFilter === 'locked' && !isLocked) continue;
+                        if (statusFilter === 'pending' && isLocked) continue;
+
+                        exportList.push({
                             "BLOCK": record.block || "",
                             "CLUSTER": record.cluster || "",
                             "CLUSTER CODE": record.cluster_code || "",
                             "UDISE CODE": record.udise_code || udise,
-                            "UDISE (MARATHI)": record.udise_code_marathi || "",
                             "SCHOOL NAME": record.school_name || "",
                             "HM NAME": record.headmaster_name || "",
                             "HM MOBILE": record.headmaster_mobile || "",
@@ -355,20 +418,33 @@
                             "PFMS VENDOR": record.pfms_vendor_code || "",
                             "TAN": record.tan || "",
                             "PAN": record.pan || "",
-                            "STATUS": record.locked === 1 ? "Locked" : "Pending"
+                            "STATUS": isLocked ? "Locked" : "Pending"
                         });
                     }
 
-                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    // Apply Sorting
+                    const sortOrder = excelSortOrder.value;
+                    exportList.sort((a, b) => {
+                        if (sortOrder === 'udise_asc') {
+                            return a["UDISE CODE"].localeCompare(b["UDISE CODE"]);
+                        } else if (sortOrder === 'udise_desc') {
+                            return b["UDISE CODE"].localeCompare(a["UDISE CODE"]);
+                        } else if (sortOrder === 'name_asc') {
+                            return a["SCHOOL NAME"].localeCompare(b["SCHOOL NAME"]);
+                        }
+                        return 0;
+                    });
+
+                    const ws = XLSX.utils.json_to_sheet(exportList);
                     const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Master_Data");
-                    XLSX.writeFile(wb, "PM_POSHAN_Master_Data.xlsx");
+                    XLSX.utils.book_append_sheet(wb, ws, "PM_Poshan_Report");
+                    XLSX.writeFile(wb, "PM_POSHAN_Filtered_Report.xlsx");
                 }
             } catch (error) {
                 console.error(error);
                 alert("Error generating Excel file.");
             } finally {
-                downloadExcelBtn.innerHTML = "📥 Download Updated Excel Data";
+                downloadExcelBtn.innerHTML = "📥 Download Filtered Excel Report";
             }
         });
 
