@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM Poshan Data Collection - Ambajogai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for Excel generation -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getDatabase, ref, set, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+
+        // Your Firebase Project Configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY", // Get this from Firebase Console > Project Settings
+            authDomain: "mdm-ambajogai.firebaseapp.com",
+            databaseURL: "https://mdm-ambajogai-default-rtdb.firebaseio.com",
+            projectId: "mdm-ambajogai",
+            storageBucket: "mdm-ambajogai.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Fetching the comprehensive JSON data generated from the Excel file
+        let schoolData = [];
+        
+        async function loadData() {
+            try {
+                // Ensure comprehensive_data.json is uploaded to your GitHub Pages repository
+                const response = await fetch('comprehensive_data.json'); 
+                schoolData = await response.json();
+            } catch (error) {
+                console.error("Error loading school data:", error);
+                alert("शाळेची माहिती लोड करण्यात त्रुटी. कृपया इंटरनेट तपासा.");
+            }
+        }
+
+        window.onload = loadData;
+
+        // Form elements
+        const udiseInput = document.getElementById('udise');
+        const searchBtn = document.getElementById('searchBtn');
+        const dataForm = document.getElementById('dataForm');
+        
+        const schoolNameEl = document.getElementById('schoolName');
+        const hmNameInput = document.getElementById('hmName');
+        const hmMobileInput = document.getElementById('hmMobile');
+        const tanInput = document.getElementById('tan');
+        const panInput = document.getElementById('pan');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMsg = document.getElementById('statusMsg');
+
+        // Admin elements
+        const adminBtn = document.getElementById('adminBtn');
+        const adminModal = document.getElementById('adminModal');
+        const pinInput = document.getElementById('adminPin');
+        const verifyPinBtn = document.getElementById('verifyPinBtn');
+        const cancelAdminBtn = document.getElementById('cancelAdminBtn');
+        const pinError = document.getElementById('pinError');
+        const adminControls = document.getElementById('adminControls');
+        const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+        const dataCollectionArea = document.getElementById('dataCollectionArea');
+        const closeAdminBtn = document.getElementById('closeAdminBtn');
+
+        const ADMIN_PIN = "2026"; // Admin PIN protection
+
+        // Search and Auto-Populate Logic
+        searchBtn.addEventListener('click', async () => {
+            const udise = udiseInput.value.trim();
+            const school = schoolData.find(s => s.u === udise);
+
+            if (school) {
+                // 1. Set basic read-only info
+                schoolNameEl.textContent = school.s;
+                
+                // 2. Set default values from Excel (JSON)
+                let prefillHmName = school.h || "";
+                let prefillHmMobile = school.m || "";
+                let prefillTan = (school.t && school.t !== "0") ? school.t : "";
+                let prefillPan = (school.p && school.p !== "0") ? school.p : "";
+
+                // 3. Check Firebase for already updated/edited data
+                searchBtn.disabled = true;
+                searchBtn.innerText = "माहिती शोधत आहे...";
+                
+                try {
+                    const dbRef = ref(db, 'pm_poshan_ambajogai/' + udise);
+                    const snapshot = await get(dbRef);
+                    
+                    if (snapshot.exists()) {
+                        const fbData = snapshot.val();
+                        // Overwrite with Firebase data if it exists (prioritize updated data)
+                        if (fbData.hm_name) prefillHmName = fbData.hm_name;
+                        if (fbData.hm_mobile) prefillHmMobile = fbData.hm_mobile;
+                        if (fbData.tan) prefillTan = fbData.tan;
+                        if (fbData.pan) prefillPan = fbData.pan;
+                    }
+                } catch (error) {
+                    console.error("Error fetching from Firebase:", error);
+                } finally {
+                    searchBtn.disabled = false;
+                    searchBtn.innerText = "शोधा";
+                }
+
+                // 4. Auto-populate the input fields
+                hmNameInput.value = prefillHmName;
+                hmMobileInput.value = prefillHmMobile;
+                tanInput.value = prefillTan;
+                panInput.value = prefillPan;
+                
+                // Show form
+                dataForm.classList.remove('hidden');
+                statusMsg.classList.add('hidden');
+            } else {
+                alert("UDISE क्रमांक आढळला नाही. कृपया योग्य क्रमांक टाका.");
+                dataForm.classList.add('hidden');
+            }
+        });
+
+        // Submit Logic
+        submitBtn.addEventListener('click', async () => {
+            const udise = udiseInput.value.trim();
+            if (!udise) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "जतन करत आहे...";
+
+            const updatedInfo = {
+                udise: udise,
+                school_name: schoolNameEl.textContent,
+                hm_name: hmNameInput.value.trim(),
+                hm_mobile: hmMobileInput.value.trim(),
+                tan: tanInput.value.trim(),
+                pan: panInput.value.trim(),
+                updated_at: serverTimestamp()
+            };
+
+            try {
+                // Save to Firebase Realtime Database
+                await set(ref(db, 'pm_poshan_ambajogai/' + udise), updatedInfo);
+                
+                dataForm.classList.add('hidden');
+                statusMsg.classList.remove('hidden');
+                udiseInput.value = '';
+            } catch (error) {
+                console.error("Error saving data:", error);
+                alert("माहिती जतन करताना त्रुटी आली. पुन्हा प्रयत्न करा.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "माहिती जतन करा";
+            }
+        });
+
+        // Admin functions
+        adminBtn.addEventListener('click', () => {
+            adminModal.classList.remove('hidden');
+            pinInput.value = '';
+            pinError.classList.add('hidden');
+        });
+
+        cancelAdminBtn.addEventListener('click', () => {
+            adminModal.classList.add('hidden');
+        });
+        
+        closeAdminBtn.addEventListener('click', () => {
+            adminControls.classList.add('hidden');
+            dataCollectionArea.classList.remove('hidden');
+        });
+
+        verifyPinBtn.addEventListener('click', () => {
+            if (pinInput.value === ADMIN_PIN) {
+                adminModal.classList.add('hidden');
+                dataCollectionArea.classList.add('hidden');
+                adminControls.classList.remove('hidden');
+            } else {
+                pinError.classList.remove('hidden');
+            }
+        });
+
+        // Download Excel Logic
+        downloadExcelBtn.addEventListener('click', async () => {
+            downloadExcelBtn.disabled = true;
+            downloadExcelBtn.innerText = "Downloading...";
+            
+            try {
+                // 1. Fetch updated data from Firebase
+                const dbRef = ref(db, 'pm_poshan_ambajogai');
+                const snapshot = await get(dbRef);
+                const updatedData = snapshot.val() || {};
+
+                // 2. Merge original JSON with Firebase updates
+                const mergedData = schoolData.map(school => {
+                    const updates = updatedData[school.u];
+                    return {
+                        "UDISE CODE": school.u,
+                        "SCHOOL NAME": school.s,
+                        "CLUSTER": school.c,
+                        "ACCOUNT NO": school.a,
+                        "BANK NAME": school.b,
+                        "IFSC": school.i,
+                        "HM Name (Original)": school.h,
+                        "HM Name (Updated)": updates ? updates.hm_name : "",
+                        "Mobile (Original)": school.m,
+                        "Mobile (Updated)": updates ? updates.hm_mobile : "",
+                        "TAN (Original)": school.t,
+                        "TAN (Updated)": updates ? updates.tan : "",
+                        "PAN (Original)": school.p,
+                        "PAN (Updated)": updates ? updates.pan : "",
+                        "Last Updated": updates && updates.updated_at ? new Date(updates.updated_at).toLocaleString('en-IN') : "Not Updated"
+                    };
+                });
+
+                // 3. Generate Excel file using SheetJS
+                const worksheet = XLSX.utils.json_to_sheet(mergedData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Updated Data");
+                
+                // Set column widths for better readability
+                const wscols = [
+                    {wch: 15}, {wch: 40}, {wch: 20}, {wch: 20}, {wch: 20}, {wch: 15},
+                    {wch: 30}, {wch: 30}, {wch: 15}, {wch: 15}, 
+                    {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}
+                ];
+                worksheet['!cols'] = wscols;
+
+                // 4. Trigger download
+                XLSX.writeFile(workbook, "PM_POSHAN_AMBAJOGAI_UPDATED.xlsx");
+                
+            } catch (error) {
+                console.error("Error generating Excel:", error);
+                alert("एक्सेल फाइल तयार करताना त्रुटी आली.");
+            } finally {
+                downloadExcelBtn.disabled = false;
+                downloadExcelBtn.innerText = "Download Updated Excel";
+            }
+        });
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 font-sans relative">
+    
+    <!-- Header with Admin Button -->
+    <div class="flex justify-end max-w-xl mx-auto mb-2">
+        <button id="adminBtn" class="text-sm bg-gray-300 hover:bg-gray-400 text-gray-800 py-1 px-3 rounded shadow">Admin Login</button>
+    </div>
+
+    <!-- Main Data Collection Area -->
+    <div id="dataCollectionArea" class="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-center text-blue-700 mb-6">PM Poshan Data Collection<br><span class="text-lg text-gray-600">Taluka Ambajogai</span></h2>
+        
+        <!-- Search Section -->
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">शाळेचा UDISE क्रमांक टाका (11 अंकी)</label>
+            <div class="flex gap-2">
+                <input type="number" id="udise" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 27270101612">
+                <button id="searchBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">शोधा</button>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div id="statusMsg" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+            माहिती यशस्वीरित्या जतन केली गेली आहे! (Data Saved Successfully)
+        </div>
+
+        <!-- Editable Form Section -->
+        <div id="dataForm" class="hidden space-y-4 border-t pt-4">
+            <div>
+                <label class="block text-gray-500 text-sm">शाळेचे नाव (School Name)</label>
+                <p id="schoolName" class="font-bold text-gray-800 text-lg"></p>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-bold mb-1">मुख्याध्यापकाचे नाव (HM Name)</label>
+                <input type="text" id="hmName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-bold mb-1">मोबाईल क्रमांक (Mobile Number)</label>
+                <input type="tel" id="hmMobile" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-bold mb-1">TAN क्रमांक (TAN Number)</label>
+                <input type="text" id="tan" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-bold mb-1">PAN क्रमांक (PAN Number)</label>
+                <input type="text" id="pan" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+            </div>
+
+            <button id="submitBtn" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition mt-4">
+                माहिती जतन करा (Save)
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Controls Area (Hidden by default) -->
+    <div id="adminControls" class="hidden max-w-xl mx-auto bg-white rounded-lg shadow-md p-6 border-t-4 border-purple-600">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-purple-700">Admin Dashboard</h2>
+            <button id="closeAdminBtn" class="text-gray-500 hover:text-gray-800">&times; Close</button>
+        </div>
+        
+        <p class="text-gray-600 mb-6">Merge real-time updates from Firebase with the original dataset and export to Excel.</p>
+        
+        <button id="downloadExcelBtn" class="w-full bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition flex justify-center items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Download Updated Excel
+        </button>
+    </div>
+
+    <!-- Admin PIN Modal -->
+    <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-80">
+            <h3 class="text-xl font-bold mb-4 text-center">Admin Access</h3>
+            <input type="password" id="adminPin" placeholder="Enter PIN" class="w-full px-4 py-2 border rounded-lg mb-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <p id="pinError" class="text-red-500 text-sm text-center mb-4 hidden">Incorrect PIN.</p>
+            <div class="flex gap-2 mt-4">
+                <button id="cancelAdminBtn" class="w-1/2 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button id="verifyPinBtn" class="w-1/2 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Login</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
